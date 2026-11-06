@@ -23,7 +23,7 @@ def parse_file_trial_duration_info(filename):
 
     # Extract trial label and burst on duration (e.g. {'01','1s'}, {'02','2s'}, etc.)
     match = re.search(
-        r"ind(?:_)?(\d{2})_(\d+)_(?:.*?(?=\d+hz|\d+ms|\d+s|DLC))?(?:(\d+)hz)?(?:_)?(?:(\d+)ms)?(?:_)?(?:(\d+)s)?DLC",
+        r"ind(?:_)?(\d{2})_(\d+)_(?:(\d+)(?:DLC)?(?!hz|ms|s)|(?:.*?(?=\d+hz|\d+ms|\d+s|\d|DLC))?(?:(\d+)hz)?(?:_)?(?:(\d+)ms)?(?:_)?(?:(\d+)s)?DLC)",
         filename,
     )
 
@@ -39,11 +39,17 @@ def parse_file_trial_duration_info(filename):
         }
 
     if match:
-        ind_str, trial_str, freq_str, pulse_width, dur_str = match.groups()
+        ind_str = match.group(1)
+        trial_str = match.group(2)
+        freq_str = match.group(4)
+        pulse_width_str = match.group(5)
+
+        dur_str = match.group(3) or match.group(6)
+
         ind_num = int(ind_str)
         trial_num = int(trial_str)
         freq_num = int(freq_str) if freq_str else 0
-        pulse_width_num = int(pulse_width) if pulse_width else 1
+        pulse_width_num = int(pulse_width_str) if pulse_width_str else 1
 
         if dur_str:
             # Insert decimal point if ID has 3 or more digits ('201' -> '2.1')
@@ -61,9 +67,7 @@ def parse_file_trial_duration_info(filename):
 
     # Guard against any code path where the regex does not provide Freq/Pulse values
     if "freq_num" not in locals():
-        freq_num = 0
-    if "pulse_width_num" not in locals():
-        pulse_width_num = 1
+        freq_num = 100
 
     return {
         "filename": filename,
